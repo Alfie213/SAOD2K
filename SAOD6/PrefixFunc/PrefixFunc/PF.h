@@ -28,6 +28,7 @@ public:
 		if (initialized) return;
 		counter = 0;
 		n = strlen(s);
+		delete[] pv;
 		pv = new int[n];
 		initialized = true;
 		

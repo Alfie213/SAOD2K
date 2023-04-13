@@ -14,4 +14,5 @@ int main()
     cout << endl;
     cout << pf.CmpCount() << endl;
     cout << "Hello World!\n";
+    return 0;
 }
