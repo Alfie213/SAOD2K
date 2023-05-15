@@ -27,6 +27,7 @@ int main()
 
     WF wf(sizeof(cur), sizeof(prev));
     wf.Compare(prev, cur);
-    std::cout << wf.Prescription() << std::endl;
+    /*std::cout << wf.GetPrescription() << std::endl;
+    std::cout << wf.LevenshteinDistance("123", "1dsl23") << std::endl;*/
     return 0;
 }
