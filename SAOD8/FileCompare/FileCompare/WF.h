@@ -3,6 +3,7 @@
 #include <string>
 #include <stdexcept>
 #include <sstream>
+#include <algorithm>
 
 class WF
 {
@@ -69,42 +70,78 @@ public:
     }
 
     std::string GetPrescription() {
-        int i = prevVersion.size();
-        int j = curVersion.size();
-        int min = 0;
-        int min_value = 0;
-        std::string prescription = "";
-        while (i > 0 || j > 0) {
-            if (i == 0) {
-                prescription = ">>>" + curVersion[j - 1] + prescription;
-                j--;
-            }
-            else if (j == 0) {
-                prescription = "<<<" + prevVersion[i - 1] + prescription;
-                i--;
-            }
-            else {
-                min_value = Min(Get(i - 1, j), Get(i, j - 1), Get(i - 1, j - 1));
-                if (min_value == Get(i - 1, j - 1)) {
-                    if (Get(i, j) == Get(i - 1, j - 1)) {
-                        prescription = " " + prevVersion[i - 1] + prescription;
-                    }
-                    else {
-                        prescription = "*" + prevVersion[i - 1] + prescription;
-                    }
-                    i--;
-                    j--;
+        const int m = prevVersion.size();
+        const int n = curVersion.size();
+
+        std::vector<std::vector<int>> dp(m + 1, std::vector<int>(n + 1));
+
+        // Инициализация первой строки и первого столбца
+        for (int i = 0; i <= m; ++i) {
+            dp[i][0] = i;
+        }
+
+        for (int j = 0; j <= n; ++j) {
+            dp[0][j] = j;
+        }
+
+        // Заполнение матрицы расстояний
+        for (int i = 1; i <= m; ++i) {
+            for (int j = 1; j <= n; ++j) {
+                if (prevVersion[i - 1] == curVersion[j - 1]) {
+                    dp[i][j] = dp[i - 1][j - 1];
                 }
-                else if (min_value == Get(i, j - 1)) {
-                    prescription = ">>>" + curVersion[j - 1] + prescription;
-                    j--;
+                else {
+                    dp[i][j] = 1 + std::min({ dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1] });
                 }
-                else if (min_value == Get(i - 1, j)) {
-                    prescription = "<<<" + prevVersion[i - 1] + prescription;
-                    i--;
+
+                // Проверяем операцию транспозиции
+                if (i > 1 && j > 1 && prevVersion[i - 1] == curVersion[j - 2] && prevVersion[i - 2] == curVersion[j - 1]) {
+                    dp[i][j] = std::min(dp[i][j], dp[i - 2][j - 2] + 1);
                 }
             }
         }
+
+        // Восстановление редакционного предписания
+        int i = m;
+        int j = n;
+        std::string prescription;
+
+        while (i > 0 && j > 0) {
+            if (prevVersion[i - 1] == curVersion[j - 1]) {
+                --i;
+                --j;
+            }
+            else if (dp[i][j] == dp[i - 1][j - 1] + 1) {
+                prescription += "Replace " + prevVersion[i - 1] + " with " + curVersion[j - 1] + "\n";
+                --i;
+                --j;
+            }
+            else if (dp[i][j] == dp[i - 1][j] + 1) {
+                prescription += "Delete " + prevVersion[i - 1] + "\n";
+                --i;
+            }
+            else if (dp[i][j] == dp[i][j - 1] + 1) {
+                prescription += "Insert " + curVersion[j - 1] + "\n";
+                --j;
+            }
+            else if (i > 1 && j > 1 && dp[i][j] == dp[i - 2][j - 2] + 1 && prevVersion[i - 1] == curVersion[j - 2] && prevVersion[i - 2] == curVersion[j - 1]) {
+                prescription += "Transpose " + prevVersion[i - 1] + " and " + prevVersion[i - 2] + "\n";
+                i -= 2;
+                j -= 2;
+            }
+        }
+
+        // Добавляем оставшиеся операции в редакционное предписание
+        while (i > 0) {
+            prescription += "Delete " + prevVersion[i - 1] + "\n";
+            --i;
+        }
+
+        while (j > 0) {
+            prescription += "Insert " + curVersion[j - 1] + "\n";
+            --j;
+        }
+
         return prescription;
     }
 
@@ -126,7 +163,7 @@ public:
         int distance = LevenshteinDistance(prevStr, currentStr);
 
         std::cout << "Distance: " << distance << std::endl;
-        std::cout << "Prescription: " << GetPrescription() << std::endl;
+        std::cout << "Prescription:" << std::endl << GetPrescription() << std::endl;
     }
 
     std::string PrevLine(int i) const {
