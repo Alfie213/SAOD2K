@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <stdexcept>
+#include <sstream>
 
 class WF
 {
@@ -109,13 +110,21 @@ public:
 
     void Compare(std::istream& prev, std::istream& current) {
         std::string line;
+        std::string prevStr = "";
+        std::string currentStr;
         while (getline(prev, line)) {
             prevVersion.push_back(line);
+            prevStr += line;
+            prevStr += '\n';
         }
         while (getline(current, line)) {
             curVersion.push_back(line);
+            currentStr += line;
+            currentStr += '\n';
         }
-        int distance = LevenshteinDistance(prevVersion.back(), curVersion.back());
+
+        int distance = LevenshteinDistance(prevStr, currentStr);
+
         std::cout << "Distance: " << distance << std::endl;
         std::cout << "Prescription: " << GetPrescription() << std::endl;
     }
@@ -134,5 +143,11 @@ public:
             throw std::out_of_range("Index out of range");
         }
         return curVersion[i];
+    }
+
+    std::string istreamToString(std::istream& inputStream) {
+        std::ostringstream oss;
+        oss << inputStream.rdbuf();
+        return oss.str();
     }
 };
