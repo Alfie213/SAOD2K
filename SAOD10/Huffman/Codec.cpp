@@ -88,7 +88,7 @@ int Codec::CompressFile(ifstream& is, ofstream& os)
 		is.get((char&)chCurrent);
 	}
 
-	/// Геннерация кодов Хаффмана
+	/// Генерация кодов Хаффмана
 	HC hc;
 	hc.GenerateCodes(chTbl);
 
@@ -101,18 +101,18 @@ int Codec::CompressFile(ifstream& is, ofstream& os)
 	// Вывод таблицы кодов в файл
 	// int n - количество записей в таблице
 	// {ch, len, code} по числу записей
-	os.write((char*)&n, sizeof(n));
+	os.write(reinterpret_cast<const char*>(&n), sizeof(n));
 	for (int i = 0; i < hc.TblSize(); i++) {
 		HC::Code c = hc.GetCode(i);
 		if (c.len != 0)
 		{
 			os.put(c.ch);
-			os.put(c.len);
-			os.write((char*)&c.bits, sizeof(c.bits));
+			os.put(static_cast<char>(c.len));
+			os.write(reinterpret_cast<const char*>(&c.bits), sizeof(c.bits));
 		}
 	}
 
-	/// Повтороное чтение входного потока и его кодирование
+	/// Повторное чтение входного потока и его кодирование
 	is.clear();
 	is.seekg(0, ios::beg);
 
@@ -126,15 +126,15 @@ int Codec::CompressFile(ifstream& is, ofstream& os)
 	int nBlk = 0;
 
 	auto rit = r.begin();		// Итератор для списка повторов
-	int pos = 0, bbPos=0;		// Позиция в файле и позиция начала блока
+	int pos = 0, bbPos = 0;		// Позиция в файле и позиция начала блока
 	is.get((char&)chCurrent);
 	while (!is.eof())
 	{
 		if (rit != r.end() && rit->second > 0)
 		{
-			if (pos < rit->first &&  bbPos < MAX_BLOCK_LEN)	//кодируем по Хаффману
+			if (pos < rit->first && bbPos < MAX_BLOCK_LEN)	//кодируем по Хаффману
 			{
-				if(bbPos++ == 0)	// Выводим заголовок блока кодов по Хаффману и считаем длину блока
+				if (bbPos++ == 0)	// Выводим заголовок блока кодов по Хаффману и считаем длину блока
 					outputCode(os, MakeCode(rit->first - pos));
 
 				outputCode(os, hc.GetCode(chCurrent));
@@ -170,6 +170,7 @@ int Codec::CompressFile(ifstream& is, ofstream& os)
 #endif
 	return 0;
 }
+
 
 void readCodesReverseOrder(std::istream& input, HC& hc)
 {
